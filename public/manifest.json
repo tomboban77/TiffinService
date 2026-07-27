@@ -1,0 +1,9 @@
+{
+  "name": "Kitchen Dashboard",
+  "short_name": "Kitchen",
+  "start_url": "/today",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#111827",
+  "icons": []
+}
