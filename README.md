@@ -35,6 +35,10 @@ cp .env.example .env.local
 
 Fill in the four values above in `.env.local`. This file is gitignored — never commit it.
 
+`npm run db:migrate` and `npm run db:seed` load `.env.local` themselves (via `db/env.ts`), so you don't
+need to export `DATABASE_URL` into your shell session manually. `npm run verify:local` never touches
+`.env.local` at all — it runs entirely against an in-memory PGlite instance.
+
 ### 3. Install dependencies
 
 ```bash

@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </form>
       </header>
 
-      <main className="px-4 py-4">{children}</main>
+      <main className="mx-auto w-full max-w-xl px-4 py-4">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 flex border-t border-gray-200 bg-white">
         {[

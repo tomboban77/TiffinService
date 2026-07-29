@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./env";
 import { db } from "./client";
 import { seed } from "./seedData";
 

@@ -69,19 +69,19 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
                 });
                 const entries = Object.entries(counts);
                 return (
-                  <div key={slot.id} className="rounded-lg border border-gray-200 bg-white p-4">
-                    <div className="mb-2 text-sm font-medium">{slot.label}</div>
+                  <div key={slot.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <div className="mb-3 text-base font-semibold">{slot.label}</div>
                     {entries.length === 0 ? (
                       <p className="text-sm text-gray-500">Nothing scheduled.</p>
                     ) : (
-                      <ul className="flex flex-col gap-1 text-sm">
+                      <div className="grid grid-cols-2 gap-3">
                         {entries.map(([itemId, qty]) => (
-                          <li key={itemId} className="flex justify-between">
-                            <span>{priceById.get(itemId)?.name ?? itemId}</span>
-                            <span className="font-medium">{qty}</span>
-                          </li>
+                          <div key={itemId} className="rounded-lg bg-gray-50 p-3">
+                            <div className="text-3xl font-bold leading-none">{qty}</div>
+                            <div className="mt-1 text-sm text-gray-500">{priceById.get(itemId)?.name ?? itemId}</div>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     )}
                   </div>
                 );
@@ -129,40 +129,47 @@ function StopList({
   if (stops.length === 0) return <p className="text-sm text-gray-500">Nothing here today.</p>;
 
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="flex flex-col gap-3">
       {stops.map((stop) => (
-        <li key={stop.id} className="rounded-lg border border-gray-200 bg-white p-3 text-sm">
-          <div className="flex items-center justify-between">
+        <li key={stop.id} className="rounded-xl border border-gray-200 bg-white p-4 text-sm shadow-sm">
+          <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="font-medium">{stop.customerName}</div>
-              <div className="text-xs text-gray-500">
+              <div className="text-base font-medium">{stop.customerName}</div>
+              <div className="text-sm text-gray-500">
                 {slotLabel(stop.slotId)} {stop.customerAddress ? `— ${stop.customerAddress}` : ""}
               </div>
-              {stop.customerFoodNotes && <div className="text-xs text-gray-500">Notes: {stop.customerFoodNotes}</div>}
+              {stop.customerFoodNotes && <div className="text-sm text-gray-500">Notes: {stop.customerFoodNotes}</div>}
             </div>
             <StatusBadge status={stop.status} />
           </div>
 
           {stop.status === "pending" && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-2">
               <form action={markDeliveredAction.bind(null, stop.id)}>
-                <button className="rounded-md bg-gray-900 px-3 py-1 text-xs font-medium text-white">Delivered</button>
+                <button className="w-full rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white">Delivered</button>
               </form>
-              <details className="text-xs">
-                <summary className="cursor-pointer rounded-md border border-gray-300 px-3 py-1">Not delivered</summary>
+              <details className="open:col-span-2 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex w-full cursor-pointer items-center justify-center rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700">
+                  Not delivered
+                </summary>
                 <form action={markNotDeliveredAction.bind(null, stop.id)} className="mt-2 flex flex-col gap-2">
-                  <label className="flex items-center gap-1">
-                    <input type="checkbox" name="chargeOnFail" /> Charge anyway
+                  <label className="flex items-center gap-2 py-1">
+                    <input type="checkbox" name="chargeOnFail" className="h-5 w-5" /> Charge anyway
                   </label>
-                  <input name="note" placeholder="Note (required)" required className="rounded-md border border-gray-300 px-2 py-1" />
-                  <button type="submit" className="self-start rounded-md border border-gray-300 px-3 py-1">
+                  <input
+                    name="note"
+                    placeholder="Note (required)"
+                    required
+                    className="rounded-lg border border-gray-300 px-3 py-3 text-sm"
+                  />
+                  <button type="submit" className="rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold">
                     Confirm
                   </button>
                 </form>
               </details>
             </div>
           )}
-          {stop.status === "not_delivered" && stop.note && <div className="mt-1 text-xs text-gray-500">Note: {stop.note}</div>}
+          {stop.status === "not_delivered" && stop.note && <div className="mt-2 text-sm text-gray-500">Note: {stop.note}</div>}
         </li>
       ))}
     </ul>
