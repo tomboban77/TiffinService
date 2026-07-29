@@ -6,6 +6,7 @@ import { weekdayInTimezone } from "../time";
 import { listActiveStandingOrderFixtures } from "./standingOrders";
 import { listAdjustmentsForDate } from "./adjustments";
 import { listClosureDates } from "./closures";
+import { burnPointsForDelivery } from "./points";
 
 /**
  * Idempotently generates today's route_stops from standing orders +
@@ -116,8 +117,9 @@ export async function markDelivered(db: Db, operatorId: string, routeStopId: str
     const priceRows = await tx.select().from(priceListItems).where(eq(priceListItems.operatorId, operatorId));
     const priceById = new Map(priceRows.map((p) => [p.id, p.priceCents]));
 
+    const burnLines: { deliveryLedgerId: string; quantity: number }[] = [];
     for (const [priceListItemId, quantity] of Object.entries(perItem)) {
-      await tx
+      const inserted = await tx
         .insert(deliveryLedger)
         .values({
           operatorId,
@@ -130,8 +132,13 @@ export async function markDelivered(db: Db, operatorId: string, routeStopId: str
           unitPriceCents: priceById.get(priceListItemId) ?? 0,
           status: "delivered",
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning();
+      const ledgerRow = inserted[0];
+      if (ledgerRow) burnLines.push({ deliveryLedgerId: ledgerRow.id, quantity });
     }
+    // Delivered is always billable — no-ops for non-prepaid customers.
+    await burnPointsForDelivery(tx as Db, operatorId, stop.customerId, burnLines);
 
     const updated = await tx
       .update(routeStops)
@@ -175,8 +182,9 @@ export async function markNotDelivered(db: Db, operatorId: string, routeStopId: 
     const priceById = new Map(priceRows.map((p) => [p.id, p.priceCents]));
     const status = input.chargeOnFail ? "failed_charged" : "failed_not_charged";
 
+    const burnLines: { deliveryLedgerId: string; quantity: number }[] = [];
     for (const [priceListItemId, quantity] of Object.entries(perItem)) {
-      await tx
+      const inserted = await tx
         .insert(deliveryLedger)
         .values({
           operatorId,
@@ -190,8 +198,14 @@ export async function markNotDelivered(db: Db, operatorId: string, routeStopId: 
           status,
           note: input.note,
         })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning();
+      const ledgerRow = inserted[0];
+      // failed_not_charged burns nothing — per lib/billing/billableStatuses.ts,
+      // only failed_charged is billable alongside delivered.
+      if (ledgerRow && status === "failed_charged") burnLines.push({ deliveryLedgerId: ledgerRow.id, quantity });
     }
+    await burnPointsForDelivery(tx as Db, operatorId, stop.customerId, burnLines);
 
     const updated = await tx
       .update(routeStops)

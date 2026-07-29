@@ -98,6 +98,24 @@ npm run verify:local
 
 All three run in CI on every push (`.github/workflows/ci.yml`).
 
+## End-to-end tests
+
+`npm run test:e2e` runs the Playwright suite (`e2e/`) against a real running app and a real Postgres —
+the money paths (delivery ledger, adjustments, phone normalization, weekly counts, closures, prepaid
+points) that PGlite and unit tests can't exercise end-to-end. Locally it targets a dedicated test
+Supabase project (never the dev project — copy `.env.test.example` to `.env.test`); CI spins up a
+self-contained local Supabase stack via Docker (`.github/workflows/ci.yml`'s `e2e` job) instead, so
+there's no external dependency or shared state between runs.
+
+## Deployment
+
+Not yet deployed to Vercel. One thing to specifically re-verify on first deploy: `lib/supabase/server.ts`
+passes an explicit `undici` fetch to the Supabase server client instead of the ambient global `fetch`,
+because in local dev this app's Node-runtime `fetch` calls to Supabase's Auth API failed outright under
+Next's fetch patching (confirmed: identical calls succeed outside Next; this is not a Supabase-specific
+issue). Vercel's Node runtime may or may not exhibit the same failure — confirm login actually works
+there before shipping, and if it does fail, this fetch override is the first thing to check.
+
 ## Project layout
 
 ```
@@ -110,4 +128,5 @@ lib/supabase/    Auth client helpers (browser, server, middleware)
 app/             Next.js App Router pages — (dashboard) group is the authenticated app
 tests/           Vitest unit tests for lib/billing
 scripts/         verify-local.ts — the PGlite end-to-end check described above
+e2e/             Playwright end-to-end suite (see "End-to-end tests" above)
 ```
