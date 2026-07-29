@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { fetch as undiciFetch } from "undici";
 
 export function createClient() {
   const cookieStore = cookies();
@@ -17,5 +18,9 @@ export function createClient() {
         }
       },
     },
+    // Next's Node-runtime fetch patch (for its Data Cache) breaks Supabase's
+    // POST requests outright in some environments — bypass it with a fetch
+    // implementation Next never gets a chance to wrap.
+    global: { fetch: undiciFetch as unknown as typeof fetch },
   });
 }

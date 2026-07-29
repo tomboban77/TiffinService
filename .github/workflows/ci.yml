@@ -20,8 +20,59 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Unit tests (settlement, counts, points)
+      - name: Unit tests (settlement, counts, points, phone)
         run: npm test
 
       - name: Schema + migration + billing-cycle verification (PGlite)
         run: npm run verify:local
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Self-contained local Supabase stack (Postgres + GoTrue auth + API),
+      # run entirely via Docker on the runner — no external project, no
+      # shared state between runs. A bare `postgres:` service container
+      # can't work here: the login flow this suite exercises needs a real
+      # Auth service, not just a database.
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+
+      - name: Initialize and start the local Supabase stack
+        run: |
+          supabase init --workdir .
+          supabase start
+
+      - name: Export local stack connection details for the e2e suite
+        run: |
+          supabase status -o env > /tmp/supabase-status.env
+          echo "TEST_SUPABASE_URL=$(grep '^API_URL=' /tmp/supabase-status.env | cut -d= -f2-)" >> "$GITHUB_ENV"
+          echo "TEST_DATABASE_URL=$(grep '^DB_URL=' /tmp/supabase-status.env | cut -d= -f2-)" >> "$GITHUB_ENV"
+          echo "TEST_SUPABASE_ANON_KEY=$(grep '^ANON_KEY=' /tmp/supabase-status.env | cut -d= -f2-)" >> "$GITHUB_ENV"
+          echo "TEST_SUPABASE_SERVICE_ROLE_KEY=$(grep '^SERVICE_ROLE_KEY=' /tmp/supabase-status.env | cut -d= -f2-)" >> "$GITHUB_ENV"
+          echo "TEST_OPERATOR_EMAIL=e2e-operator@tiffin-test.local" >> "$GITHUB_ENV"
+          echo "TEST_OPERATOR_PASSWORD=E2eTestPassw0rd!" >> "$GITHUB_ENV"
+
+      - name: Run the e2e suite
+        run: npx playwright test
+        env:
+          CI: true
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

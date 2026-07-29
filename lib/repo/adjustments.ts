@@ -98,12 +98,18 @@ export interface CreateAdjustmentBatchInput {
 
 /**
  * Like createAdjustment, but writes several set_quantity rows for the same
- * date as one atomic instruction sharing an adjustment_group_id. Calling
- * createAdjustment once per meal type would be wrong here: its supersession
- * query only keys on (customer, date[, standing order]), not priceListItemId,
- * so a second call for a different meal type on the same date would cancel
- * the first meal type's row as if it conflicted with it, rather than
- * coexisting alongside it.
+ * date as one atomic instruction sharing an adjustment_group_id, and only
+ * supersedes a prior *same-item* adjustment rather than every live
+ * adjustment for that date. Two coexisting concerns motivate this:
+ *
+ * 1. Within one call: createAdjustment once per meal type would be wrong
+ *    here — its supersession query only keys on (customer, date[, standing
+ *    order]), not priceListItemId, so a second call for a different meal
+ *    type on the same date would cancel the first meal type's row.
+ * 2. Across separate calls: an operator setting protein=0 today and, in a
+ *    later separate submission, veg=5 for the same date must not have the
+ *    second submission cancel the first — they're independent per-item
+ *    overrides, not conflicting instructions about the same subject.
  */
 export async function createAdjustmentBatch(db: Db, operatorId: string, input: CreateAdjustmentBatchInput) {
   return db.transaction(async (tx) => {
@@ -119,14 +125,17 @@ export async function createAdjustmentBatch(db: Db, operatorId: string, input: C
         ),
       );
 
-    const superseded = existing.filter(
+    const relevant = existing.filter(
       (a) => input.standingOrderId == null || a.standingOrderId == null || a.standingOrderId === input.standingOrderId,
     );
 
     const groupId = randomUUID();
     const created = [];
+    const toCancel: string[] = [];
     for (const item of input.items) {
-      const matchingPredecessor = superseded.find((a) => a.priceListItemId === item.priceListItemId);
+      // Only a prior row for this same meal type is being replaced — a
+      // different meal type's live adjustment for the same date survives.
+      const predecessor = relevant.find((a) => a.priceListItemId === item.priceListItemId);
       const rows = await tx
         .insert(adjustments)
         .values({
@@ -141,14 +150,15 @@ export async function createAdjustmentBatch(db: Db, operatorId: string, input: C
           source: input.source,
           createdByMessageId: input.createdByMessageId ?? null,
           adjustmentGroupId: groupId,
-          supersedesAdjustmentId: matchingPredecessor?.id ?? null,
+          supersedesAdjustmentId: predecessor?.id ?? null,
         })
         .returning();
       created.push(rows[0]!);
+      if (predecessor) toCancel.push(predecessor.id);
     }
 
-    for (const old of superseded) {
-      await tx.update(adjustments).set({ canceledAt: new Date() }).where(eq(adjustments.id, old.id));
+    for (const id of toCancel) {
+      await tx.update(adjustments).set({ canceledAt: new Date() }).where(eq(adjustments.id, id));
     }
 
     return created;

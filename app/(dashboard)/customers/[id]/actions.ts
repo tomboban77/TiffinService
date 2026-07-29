@@ -9,12 +9,13 @@ import { createStandingOrder } from "../../../../lib/repo/standingOrders";
 import { createAdjustmentBatch } from "../../../../lib/repo/adjustments";
 import { manualPointsAdjustment } from "../../../../lib/repo/points";
 import { listPriceListItems } from "../../../../lib/repo/priceList";
+import { normalizePhoneE164 } from "../../../../lib/phone";
 
 export async function updateCustomerDetails(customerId: string, formData: FormData) {
   const operator = await requireOperator();
   await updateCustomer(db, operator.id, customerId, {
     name: String(formData.get("name") ?? ""),
-    phoneE164: String(formData.get("phoneE164") ?? ""),
+    phoneE164: normalizePhoneE164(String(formData.get("phoneE164") ?? "")),
     address: String(formData.get("address") ?? "") || null,
     foodNotes: String(formData.get("foodNotes") ?? "") || null,
   });
