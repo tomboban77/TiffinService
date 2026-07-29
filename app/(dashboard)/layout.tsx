@@ -1,32 +1,30 @@
-import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { requireOperator } from "../../lib/auth";
 import { signOut } from "../login/actions";
+import { SubmitButton } from "../../components/ui";
+import { DashboardNav } from "./DashboardNav";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const operator = await requireOperator();
 
   return (
-    <div className="min-h-screen pb-16">
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
-        <span className="text-sm font-medium">{operator.businessName}</span>
-        <form action={signOut}>
-          <button className="text-sm text-gray-500 underline">Sign out</button>
-        </form>
+    <div className="min-h-screen pb-24 sm:pb-0">
+      <header className="border-b border-line bg-surface">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <span className="text-sm font-semibold text-ink">{operator.businessName}</span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <DashboardNav />
+            <form action={signOut}>
+              <SubmitButton variant="ghost" size="sm" aria-label="Sign out">
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Sign out</span>
+              </SubmitButton>
+            </form>
+          </div>
+        </div>
       </header>
 
-      <main className="mx-auto w-full max-w-xl px-4 py-4">{children}</main>
-
-      <nav className="fixed inset-x-0 bottom-0 flex border-t border-gray-200 bg-white">
-        {[
-          { href: "/today", label: "Today" },
-          { href: "/customers", label: "Customers" },
-          { href: "/settings", label: "Settings" },
-        ].map((item) => (
-          <Link key={item.href} href={item.href} className="flex-1 py-3 text-center text-sm font-medium text-gray-700">
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <main className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6">{children}</main>
     </div>
   );
 }
