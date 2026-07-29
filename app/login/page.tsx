@@ -1,32 +1,35 @@
+import { ChefHat } from "lucide-react";
+import { Banner, Card, Input, SubmitButton } from "../../components/ui";
 import { signIn, signUp } from "./actions";
 
 export default function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
-      <h1 className="text-xl font-semibold">Kitchen Dashboard</h1>
-
-      {searchParams.error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{searchParams.error}</p>
-      )}
-
-      <form className="flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          Email
-          <input name="email" type="email" required className="rounded-md border border-gray-300 px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Password
-          <input name="password" type="password" required minLength={6} className="rounded-md border border-gray-300 px-3 py-2" />
-        </label>
-        <div className="flex gap-2 pt-2">
-          <button formAction={signIn} className="flex-1 rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white">
-            Log in
-          </button>
-          <button formAction={signUp} className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium">
-            Sign up
-          </button>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-paper px-4 py-10">
+      <div className="flex w-full max-w-sm flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-100 text-accent-700">
+            <ChefHat className="h-6 w-6" aria-hidden="true" />
+          </span>
+          <h1 className="text-xl font-bold text-ink">Kitchen Dashboard</h1>
         </div>
-      </form>
+
+        {searchParams.error && <Banner variant="error">{searchParams.error}</Banner>}
+
+        <Card className="w-full">
+          <form className="flex flex-col gap-4">
+            <Input label="Email" name="email" type="email" autoComplete="email" required />
+            <Input label="Password" name="password" type="password" autoComplete="current-password" required minLength={6} />
+            <div className="flex gap-2 pt-1">
+              <SubmitButton formAction={signIn} className="flex-1">
+                Log in
+              </SubmitButton>
+              <SubmitButton formAction={signUp} variant="secondary" className="flex-1">
+                Sign up
+              </SubmitButton>
+            </div>
+          </form>
+        </Card>
+      </div>
     </main>
   );
 }
