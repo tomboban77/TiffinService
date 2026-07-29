@@ -58,12 +58,35 @@ jobs:
       - name: Export local stack connection details for the e2e suite
         run: |
           supabase status -o env > /tmp/supabase-status.env
-          echo "TEST_SUPABASE_URL=$(grep '^API_URL=' /tmp/supabase-status.env | cut -d= -f2-)" >> "$GITHUB_ENV"
-          echo "TEST_DATABASE_URL=$(grep '^DB_URL=' /tmp/supabase-status.env | cut -d= -f2-)" >> "$GITHUB_ENV"
-          echo "TEST_SUPABASE_ANON_KEY=$(grep '^ANON_KEY=' /tmp/supabase-status.env | cut -d= -f2-)" >> "$GITHUB_ENV"
-          echo "TEST_SUPABASE_SERVICE_ROLE_KEY=$(grep '^SERVICE_ROLE_KEY=' /tmp/supabase-status.env | cut -d= -f2-)" >> "$GITHUB_ENV"
+          echo "--- supabase status -o env (values below are the fixed, publicly-documented local dev demo keys — never real secrets) ---"
+          cat /tmp/supabase-status.env
+
+          # `-o env` quotes every value (API_URL="http://..."). Piping through
+          # grep|cut on the previous attempt captured those quote characters
+          # as part of the value, producing an unparseable "quoted URL" and
+          # breaking supabase-js with "Invalid supabaseUrl". Sourcing the file
+          # as real shell syntax instead lets the shell do the unquoting.
+          set -a
+          source /tmp/supabase-status.env
+          set +a
+
+          echo "TEST_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "TEST_DATABASE_URL=$DB_URL" >> "$GITHUB_ENV"
+          echo "TEST_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "TEST_SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
           echo "TEST_OPERATOR_EMAIL=e2e-operator@tiffin-test.local" >> "$GITHUB_ENV"
           echo "TEST_OPERATOR_PASSWORD=E2eTestPassw0rd!" >> "$GITHUB_ENV"
+
+          # DB_URL points at the local stack's direct Postgres port (54322 by
+          # default) unless [db.pooler] is explicitly enabled in config.toml,
+          # which nothing here does — so this is never the cloud project's
+          # pooler. Confirm that in the log rather than asserting it blind.
+          echo "TEST_DATABASE_URL host: $(echo "$DB_URL" | sed -E 's#.*@([^/]+)/.*#\1#')"
+
+          if [ -z "$API_URL" ] || [ -z "$DB_URL" ] || [ -z "$ANON_KEY" ] || [ -z "$SERVICE_ROLE_KEY" ]; then
+            echo "::error::One or more Supabase local stack values were empty — see the 'supabase status -o env' output above."
+            exit 1
+          fi
 
       - name: Run the e2e suite
         run: npx playwright test
