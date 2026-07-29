@@ -1,6 +1,7 @@
 # Tiffin Service
 
-A WhatsApp-native tiffin/kitchen service management platform. See `docs/BACKEND_CONVENTIONS.md`
+A WhatsApp-native tiffin/kitchen service management platform. See `docs/BUILD_SPEC.md` for the full
+product/engineering spec (source of truth for scope and build order) and `docs/BACKEND_CONVENTIONS.md`
 for the Row Level Security / service-role convention that all server-side query code must follow.
 
 ## Stack

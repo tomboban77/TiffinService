@@ -13,7 +13,7 @@ import {
   addPrepaidPlan,
 } from "./actions";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: { error?: string } }) {
   const operator = await requireOperator();
   const [slots, priceList, prepaidPlans] = await Promise.all([
     listSlots(db, operator.id),
@@ -23,6 +23,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      {searchParams.error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{searchParams.error}</div>
+      )}
+
       <section>
         <h2 className="mb-2 text-sm font-semibold text-gray-500">Business basics</h2>
         <form action={updateBusinessBasics} className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
@@ -101,7 +105,7 @@ export default async function SettingsPage() {
               </form>
             </div>
           ))}
-          <form action={addOrUpdateSlot} className="mt-2 flex gap-2">
+          <form key={slots.length} action={addOrUpdateSlot} className="mt-2 flex gap-2">
             <input name="key" placeholder="key (e.g. dinner)" required className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm" />
             <input name="label" placeholder="Label" required className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm" />
             <input name="cutoffTime" type="time" defaultValue="20:00" required className="rounded-md border border-gray-300 px-2 py-1 text-sm" />
@@ -125,7 +129,7 @@ export default async function SettingsPage() {
               </form>
             </div>
           ))}
-          <form action={addOrUpdatePriceListItem} className="mt-2 flex gap-2">
+          <form key={priceList.length} action={addOrUpdatePriceListItem} className="mt-2 flex gap-2">
             <input name="name" placeholder="Meal type" required className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm" />
             <input
               name="priceDollars"
@@ -152,7 +156,7 @@ export default async function SettingsPage() {
               {plan.rolloverEnabled ? "rollover" : "expires at cycle end"}
             </div>
           ))}
-          <form action={addPrepaidPlan} className="mt-2 flex flex-wrap items-center gap-2">
+          <form key={prepaidPlans.length} action={addPrepaidPlan} className="mt-2 flex flex-wrap items-center gap-2">
             <input name="name" placeholder="Plan name" required className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm" />
             <input name="pointsPerRenewal" type="number" min="1" placeholder="Points" required className="w-20 rounded-md border border-gray-300 px-2 py-1 text-sm" />
             <input name="priceDollars" type="number" step="0.01" min="0" placeholder="Price" required className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm" />

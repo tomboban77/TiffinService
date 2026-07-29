@@ -80,6 +80,16 @@ async function effectiveItemsForStop(db: Db, operatorId: string, stop: { custome
   return resolveStandingOrderForDate(order, adjustments, stop.date, weekday) ?? {};
 }
 
+/**
+ * Thrown when a route stop's effective items resolve to empty at mark-time —
+ * e.g. an adjustment (skip/pause/set_quantity-to-0) landed for this
+ * customer/date *after* the stop was generated. Marking the stop
+ * delivered/not-delivered in that state would flip its status while writing
+ * zero delivery_ledger rows, which looks like a successful delivery but
+ * leaves no audit/billing trail behind it.
+ */
+export class StaleRouteStopError extends Error {}
+
 interface MarkDeliveredInput {
   markedBy?: string | null;
   lat?: number | null;
@@ -98,6 +108,11 @@ export async function markDelivered(db: Db, operatorId: string, routeStopId: str
     if (stop.status !== "pending") return stop; // idempotent: already resolved
 
     const perItem = await effectiveItemsForStop(tx as Db, operatorId, stop, timezone);
+    if (Object.keys(perItem).length === 0) {
+      throw new StaleRouteStopError(
+        "This order was skipped or changed for this date after today's route was generated — there's nothing left to mark delivered. Refresh Today to update the route.",
+      );
+    }
     const priceRows = await tx.select().from(priceListItems).where(eq(priceListItems.operatorId, operatorId));
     const priceById = new Map(priceRows.map((p) => [p.id, p.priceCents]));
 
@@ -151,6 +166,11 @@ export async function markNotDelivered(db: Db, operatorId: string, routeStopId: 
     if (stop.status !== "pending") return stop; // idempotent: already resolved
 
     const perItem = await effectiveItemsForStop(tx as Db, operatorId, stop, timezone);
+    if (Object.keys(perItem).length === 0) {
+      throw new StaleRouteStopError(
+        "This order was skipped or changed for this date after today's route was generated — there's nothing left to mark. Refresh Today to update the route.",
+      );
+    }
     const priceRows = await tx.select().from(priceListItems).where(eq(priceListItems.operatorId, operatorId));
     const priceById = new Map(priceRows.map((p) => [p.id, p.priceCents]));
     const status = input.chargeOnFail ? "failed_charged" : "failed_not_charged";

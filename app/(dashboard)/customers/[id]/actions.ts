@@ -6,7 +6,7 @@ import { db } from "../../../../db/client";
 import { requireOperator } from "../../../../lib/auth";
 import { updateCustomer } from "../../../../lib/repo/customers";
 import { createStandingOrder } from "../../../../lib/repo/standingOrders";
-import { createAdjustment } from "../../../../lib/repo/adjustments";
+import { createAdjustmentBatch } from "../../../../lib/repo/adjustments";
 import { manualPointsAdjustment } from "../../../../lib/repo/points";
 import { listPriceListItems } from "../../../../lib/repo/priceList";
 
@@ -46,19 +46,49 @@ export async function addStandingOrder(customerId: string, formData: FormData) {
   revalidatePath(`/customers/${customerId}`);
 }
 
-export async function skipDay(customerId: string, formData: FormData) {
-  const operator = await requireOperator();
-  const standingOrderId = String(formData.get("standingOrderId") ?? "");
-  const date = String(formData.get("date") ?? "");
+const MAX_ADJUSTMENT_RANGE_DAYS = 62;
 
-  await createAdjustment(db, operator.id, {
-    customerId,
-    standingOrderId: standingOrderId || null,
-    effectiveDate: date,
-    kind: "skip",
-    source: "operator",
-    note: "Marked from the customer detail page",
-  });
+function enumerateDates(startDate: string, endDate: string): string[] {
+  const dates: string[] = [];
+  let cursor = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  if (Number.isNaN(cursor.getTime()) || Number.isNaN(end.getTime()) || cursor > end) {
+    throw new Error("Invalid date range");
+  }
+  while (cursor <= end) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor = new Date(cursor.getTime() + 86_400_000);
+    if (dates.length > MAX_ADJUSTMENT_RANGE_DAYS) throw new Error(`Date range too long (max ${MAX_ADJUSTMENT_RANGE_DAYS} days)`);
+  }
+  return dates;
+}
+
+export async function addAdjustment(customerId: string, formData: FormData) {
+  const operator = await requireOperator();
+  const standingOrderId = String(formData.get("standingOrderId") ?? "") || null;
+  const startDate = String(formData.get("startDate") ?? "");
+  const endDate = String(formData.get("endDate") ?? "") || startDate;
+  if (!startDate) throw new Error("A date is required");
+
+  const priceList = await listPriceListItems(db, operator.id);
+  const items = priceList
+    .map((item) => ({ priceListItemId: item.id, raw: formData.get(`qty-${item.id}`) }))
+    .filter(({ raw }) => raw !== null && String(raw).trim() !== "")
+    .map(({ priceListItemId, raw }) => ({ priceListItemId, quantity: Number(raw) }));
+
+  if (items.length === 0) throw new Error("Set at least one meal type to skip (0) or override (a quantity)");
+
+  const dates = enumerateDates(startDate, endDate);
+  for (const effectiveDate of dates) {
+    await createAdjustmentBatch(db, operator.id, {
+      customerId,
+      standingOrderId,
+      effectiveDate,
+      items,
+      source: "operator",
+      note: "Added from the customer detail page",
+    });
+  }
 
   revalidatePath(`/customers/${customerId}`);
 }

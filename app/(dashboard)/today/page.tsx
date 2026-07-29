@@ -11,7 +11,7 @@ import { computeDailyCounts } from "../../../lib/billing/counts";
 import { todayInTimezone, addDays, weekdayInTimezone } from "../../../lib/time";
 import { markDeliveredAction, markNotDeliveredAction, closeDayAction } from "./actions";
 
-export default async function TodayPage({ searchParams }: { searchParams: { date?: string } }) {
+export default async function TodayPage({ searchParams }: { searchParams: { date?: string; error?: string } }) {
   const operator = await requireOperator();
   const date = searchParams.date ?? todayInTimezone(operator.timezone);
   const weekday = weekdayInTimezone(date, operator.timezone);
@@ -47,6 +47,10 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
           Next →
         </Link>
       </div>
+
+      {searchParams.error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{searchParams.error}</div>
+      )}
 
       {isClosed ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
@@ -93,6 +97,7 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
             <StopList
               stops={stops.filter((s) => s.deliveryMethod === "delivery")}
               slotLabel={(slotId) => slots.find((s) => s.id === slotId)?.label ?? slotId}
+              date={date}
             />
           </section>
 
@@ -101,6 +106,7 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
             <StopList
               stops={stops.filter((s) => s.deliveryMethod === "pickup")}
               slotLabel={(slotId) => slots.find((s) => s.id === slotId)?.label ?? slotId}
+              date={date}
             />
           </section>
 
@@ -122,9 +128,11 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
 function StopList({
   stops,
   slotLabel,
+  date,
 }: {
   stops: Awaited<ReturnType<typeof listRouteStopsForDate>>;
   slotLabel: (slotId: string) => string;
+  date: string;
 }) {
   if (stops.length === 0) return <p className="text-sm text-gray-500">Nothing here today.</p>;
 
@@ -145,14 +153,14 @@ function StopList({
 
           {stop.status === "pending" && (
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <form action={markDeliveredAction.bind(null, stop.id)}>
+              <form action={markDeliveredAction.bind(null, stop.id, date)}>
                 <button className="w-full rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white">Delivered</button>
               </form>
               <details className="open:col-span-2 [&_summary::-webkit-details-marker]:hidden">
                 <summary className="flex w-full cursor-pointer items-center justify-center rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700">
                   Not delivered
                 </summary>
-                <form action={markNotDeliveredAction.bind(null, stop.id)} className="mt-2 flex flex-col gap-2">
+                <form action={markNotDeliveredAction.bind(null, stop.id, date)} className="mt-2 flex flex-col gap-2">
                   <label className="flex items-center gap-2 py-1">
                     <input type="checkbox" name="chargeOnFail" className="h-5 w-5" /> Charge anyway
                   </label>

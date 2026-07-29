@@ -9,6 +9,7 @@ import {
   unique,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { subscriptionStatusEnum } from "./enums";
 
 // Root of tenancy. Every other table is scoped to an operator, either
@@ -55,7 +56,9 @@ export const operatorSlots = pgTable("operator_slots", {
   sortOrder: integer("sort_order").notNull().default(0),
   active: boolean("active").notNull().default(true),
 }, (t) => ({
-  uniqOperatorKey: uniqueIndex("operator_slots_operator_key_uniq").on(t.operatorId, t.key),
+  // Case-insensitive: "dinner" and "Dinner" are the same slot key to a double-click or a
+  // typo'd re-add, and a milestone-3 WhatsApp parser needs one unambiguous match target.
+  uniqOperatorKey: uniqueIndex("operator_slots_operator_key_uniq").on(t.operatorId, sql`lower(${t.key})`),
   // Referenced by composite FK from standing_orders, delivery_ledger, route_stops, count_locks.
   uniqSelf: unique("operator_slots_id_operator_uniq").on(t.id, t.operatorId),
 }));
@@ -69,6 +72,9 @@ export const priceListItems = pgTable("price_list_items", {
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
+  // Case-insensitive per operator: two "Protein" meal types would corrupt count grouping
+  // and give the milestone-3 WhatsApp parser an ambiguous match target.
+  uniqOperatorName: uniqueIndex("price_list_items_operator_name_uniq").on(t.operatorId, sql`lower(${t.name})`),
   // Referenced by composite FK from standing_order_items, adjustments, delivery_ledger, menu_day_items.
   uniqSelf: unique("price_list_items_id_operator_uniq").on(t.id, t.operatorId),
 }));
@@ -83,6 +89,8 @@ export const prepaidPlans = pgTable("prepaid_plans", {
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
+  // Case-insensitive per operator, same reasoning as price_list_items above.
+  uniqOperatorName: uniqueIndex("prepaid_plans_operator_name_uniq").on(t.operatorId, sql`lower(${t.name})`),
   // Referenced by composite FK from customers.
   uniqSelf: unique("prepaid_plans_id_operator_uniq").on(t.id, t.operatorId),
 }));

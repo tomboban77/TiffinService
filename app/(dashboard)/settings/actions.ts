@@ -1,7 +1,9 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "../../../db/client";
+import { isUniqueViolation } from "../../../db/errors";
 import { requireOperator } from "../../../lib/auth";
 import { updateOperatorSettings } from "../../../lib/repo/operators";
 import { upsertPriceListItem, setPriceListItemActive } from "../../../lib/repo/priceList";
@@ -33,12 +35,17 @@ export async function updateBillingConfig(formData: FormData) {
 
 export async function addOrUpdateSlot(formData: FormData) {
   const operator = await requireOperator();
-  await upsertSlot(db, operator.id, {
-    id: String(formData.get("id") ?? "") || undefined,
-    key: String(formData.get("key") ?? ""),
-    label: String(formData.get("label") ?? ""),
-    cutoffTime: String(formData.get("cutoffTime") ?? "20:00:00"),
-  });
+  try {
+    await upsertSlot(db, operator.id, {
+      id: String(formData.get("id") ?? "") || undefined,
+      key: String(formData.get("key") ?? "").trim(),
+      label: String(formData.get("label") ?? "").trim(),
+      cutoffTime: String(formData.get("cutoffTime") ?? "20:00:00"),
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) redirect(`/settings?error=${encodeURIComponent("A slot with this key already exists.")}`);
+    throw err;
+  }
   revalidatePath("/settings");
 }
 
@@ -50,11 +57,16 @@ export async function toggleSlotActive(slotId: string, active: boolean) {
 
 export async function addOrUpdatePriceListItem(formData: FormData) {
   const operator = await requireOperator();
-  await upsertPriceListItem(db, operator.id, {
-    id: String(formData.get("id") ?? "") || undefined,
-    name: String(formData.get("name") ?? ""),
-    priceCents: Math.round(Number(formData.get("priceDollars") ?? 0) * 100),
-  });
+  try {
+    await upsertPriceListItem(db, operator.id, {
+      id: String(formData.get("id") ?? "") || undefined,
+      name: String(formData.get("name") ?? "").trim(),
+      priceCents: Math.round(Number(formData.get("priceDollars") ?? 0) * 100),
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) redirect(`/settings?error=${encodeURIComponent("A meal type with this name already exists.")}`);
+    throw err;
+  }
   revalidatePath("/settings");
 }
 
@@ -66,11 +78,16 @@ export async function togglePriceListItemActive(itemId: string, active: boolean)
 
 export async function addPrepaidPlan(formData: FormData) {
   const operator = await requireOperator();
-  await createPrepaidPlan(db, operator.id, {
-    name: String(formData.get("name") ?? ""),
-    pointsPerRenewal: Number(formData.get("pointsPerRenewal") ?? 0),
-    priceCents: Math.round(Number(formData.get("priceDollars") ?? 0) * 100),
-    rolloverEnabled: formData.get("rolloverEnabled") === "on",
-  });
+  try {
+    await createPrepaidPlan(db, operator.id, {
+      name: String(formData.get("name") ?? "").trim(),
+      pointsPerRenewal: Number(formData.get("pointsPerRenewal") ?? 0),
+      priceCents: Math.round(Number(formData.get("priceDollars") ?? 0) * 100),
+      rolloverEnabled: formData.get("rolloverEnabled") === "on",
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) redirect(`/settings?error=${encodeURIComponent("A plan with this name already exists.")}`);
+    throw err;
+  }
   revalidatePath("/settings");
 }

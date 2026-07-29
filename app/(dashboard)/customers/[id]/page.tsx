@@ -6,7 +6,7 @@ import { listStandingOrdersForCustomer } from "../../../../lib/repo/standingOrde
 import { listAdjustmentHistoryForCustomer } from "../../../../lib/repo/adjustments";
 import { listSlots } from "../../../../lib/repo/slots";
 import { listPriceListItems } from "../../../../lib/repo/priceList";
-import { updateCustomerDetails, addStandingOrder, skipDay, adjustPoints } from "./actions";
+import { updateCustomerDetails, addStandingOrder, addAdjustment, adjustPoints } from "./actions";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -26,7 +26,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
 
   const updateCustomerDetailsForThis = updateCustomerDetails.bind(null, customer.id);
   const addStandingOrderForThis = addStandingOrder.bind(null, customer.id);
-  const skipDayForThis = skipDay.bind(null, customer.id);
+  const addAdjustmentForThis = addAdjustment.bind(null, customer.id);
   const adjustPointsForThis = adjustPoints.bind(null, customer.id);
 
   return (
@@ -161,24 +161,44 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-gray-500">Skip a day</h2>
-        <form action={skipDayForThis} className="flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 bg-white p-4">
-          <label className="flex flex-col gap-1 text-sm">
-            Standing order
-            <select name="standingOrderId" className="rounded-md border border-gray-300 px-3 py-2">
-              {orders.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {slotById.get(o.slotId)?.label ?? o.slotId}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Date
-            <input name="date" type="date" required className="rounded-md border border-gray-300 px-3 py-2" />
-          </label>
-          <button type="submit" className="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">
-            Skip
+        <h2 className="mb-2 text-sm font-semibold text-gray-500">Add adjustment</h2>
+        <p className="mb-2 text-xs text-gray-500">
+          Set a meal type to 0 to skip it, or a number to override its quantity, for a date or a date range. This is a
+          quick operator override — the WhatsApp bot will be the primary way customers request these in milestone 3.
+        </p>
+        <form action={addAdjustmentForThis} className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
+          <div className="flex flex-wrap gap-2">
+            <label className="flex flex-col gap-1 text-sm">
+              Standing order
+              <select name="standingOrderId" defaultValue="" className="rounded-md border border-gray-300 px-3 py-2">
+                <option value="">(any order)</option>
+                {orders.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {slotById.get(o.slotId)?.label ?? o.slotId}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Date
+              <input name="startDate" type="date" required className="rounded-md border border-gray-300 px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Through (optional, for a range)
+              <input name="endDate" type="date" className="rounded-md border border-gray-300 px-3 py-2" />
+            </label>
+          </div>
+          <fieldset className="flex flex-col gap-2 text-sm">
+            <legend className="mb-1 text-gray-500">Meal types (blank = no change, 0 = skip)</legend>
+            {priceList.map((item) => (
+              <label key={item.id} className="flex items-center justify-between gap-2">
+                {item.name}
+                <input name={`qty-${item.id}`} type="number" min={0} placeholder="—" className="w-20 rounded-md border border-gray-300 px-2 py-1" />
+              </label>
+            ))}
+          </fieldset>
+          <button type="submit" className="self-start rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">
+            Add adjustment
           </button>
         </form>
       </section>
@@ -188,7 +208,12 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
         <ul className="flex flex-col gap-1 text-sm">
           {history.map((a) => (
             <li key={a.id} className="rounded-lg border border-gray-200 bg-white p-3">
-              <span className="font-medium">{a.effectiveDate}</span> — {a.kind}
+              <span className="font-medium">{a.effectiveDate}</span> —{" "}
+              {a.priceListItemId
+                ? `${priceById.get(a.priceListItemId)?.name ?? a.priceListItemId}: ${
+                    a.kind === "set_quantity" && a.quantity === 0 ? "skip" : `${a.kind} ${a.quantity ?? ""}`.trim()
+                  }`
+                : a.kind}
               {a.note ? ` — ${a.note}` : ""}
               {a.canceledAt ? <span className="ml-2 text-xs text-gray-400">(superseded)</span> : null}
             </li>
