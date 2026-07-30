@@ -7,6 +7,8 @@ import { listAdjustmentHistoryForCustomer } from "../../../../lib/repo/adjustmen
 import { listSlots } from "../../../../lib/repo/slots";
 import { listPriceListItems } from "../../../../lib/repo/priceList";
 import { updateCustomerDetails, addStandingOrder, addAdjustment, adjustPoints } from "./actions";
+import { Badge, Card, Checkbox, Input, PageHeader, Select, SubmitButton } from "../../../../components/ui";
+import { CadenceFields } from "./CadenceFields";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -31,196 +33,178 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-lg font-semibold">{customer.name}</h1>
-        <span className="rounded-full bg-gray-100 px-2 py-1 text-xs">
-          {customer.billingMode === "prepaid" ? `Prepaid — ${customer.pointsBalance} pts` : "Billed (tab)"}
-        </span>
-      </div>
+      <PageHeader
+        title={customer.name}
+        description={
+          <Badge>{customer.billingMode === "prepaid" ? `Prepaid — ${customer.pointsBalance} pts` : "Billed (tab)"}</Badge>
+        }
+      />
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-gray-500">Contact</h2>
-        <form action={updateCustomerDetailsForThis} className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
-          <label className="flex flex-col gap-1 text-sm">
-            Name
-            <input name="name" defaultValue={customer.name} className="rounded-md border border-gray-300 px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Phone
-            <input name="phoneE164" defaultValue={customer.phoneE164} className="rounded-md border border-gray-300 px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Address
-            <input name="address" defaultValue={customer.address ?? ""} className="rounded-md border border-gray-300 px-3 py-2" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Food notes
-            <input name="foodNotes" defaultValue={customer.foodNotes ?? ""} className="rounded-md border border-gray-300 px-3 py-2" />
-          </label>
-          <button type="submit" className="mt-2 self-start rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white">
-            Save
-          </button>
-        </form>
-      </section>
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        <div className="flex flex-col gap-6">
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-ink-muted">Contact</h2>
+            <Card>
+              <form action={updateCustomerDetailsForThis} className="flex flex-col gap-4">
+                <Input label="Name" name="name" defaultValue={customer.name} />
+                <Input label="Phone number" name="phoneE164" defaultValue={customer.phoneE164} />
+                <Input label="Address" name="address" defaultValue={customer.address ?? ""} />
+                <Input label="Food notes" name="foodNotes" defaultValue={customer.foodNotes ?? ""} />
+                <SubmitButton className="self-start">Save</SubmitButton>
+              </form>
+            </Card>
+          </section>
 
-      {customer.billingMode === "prepaid" && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold text-gray-500">Points balance</h2>
-          <form action={adjustPointsForThis} className="flex flex-wrap items-end gap-2 rounded-lg border border-gray-200 bg-white p-4">
-            <label className="flex flex-col gap-1 text-sm">
-              Delta (+/-)
-              <input name="delta" type="number" required className="w-24 rounded-md border border-gray-300 px-2 py-1" />
-            </label>
-            <label className="flex flex-1 flex-col gap-1 text-sm">
-              Note (required)
-              <input name="note" required className="rounded-md border border-gray-300 px-2 py-1" />
-            </label>
-            <button type="submit" className="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">
-              Apply
-            </button>
-          </form>
-        </section>
-      )}
+          {customer.billingMode === "prepaid" && (
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-ink-muted">Points balance</h2>
+              <Card>
+                <form key={customer.pointsBalance} action={adjustPointsForThis} className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                  <div className="w-28">
+                    <Input label="Delta (+/-)" name="delta" type="number" required />
+                  </div>
+                  <div className="flex-1">
+                    <Input label="Note (required)" name="note" required />
+                  </div>
+                  <SubmitButton>Apply</SubmitButton>
+                </form>
+              </Card>
+            </section>
+          )}
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-gray-500">Standing orders</h2>
-        <div className="flex flex-col gap-3">
-          {orders.map((order) => (
-            <div key={order.id} className="rounded-lg border border-gray-200 bg-white p-4 text-sm">
-              <div className="font-medium">
-                {slotById.get(order.slotId)?.label ?? order.slotId} — {order.deliveryMethod}
-                {!order.active && <span className="ml-2 text-xs text-gray-400">(inactive)</span>}
-              </div>
-              <div className="text-gray-600">
-                {order.cadence === "batch"
-                  ? `Batch drop, ${DAY_LABELS[order.dayPattern[0] ?? 0]}, covers ${order.periodDays ?? "?"} days`
-                  : order.dayPattern.map((d) => DAY_LABELS[d]).join(", ")}
-              </div>
-              <ul className="mt-1 list-inside list-disc text-gray-600">
-                {order.items.map((item) => (
-                  <li key={item.id}>
-                    {item.quantity}x {priceById.get(item.priceListItemId)?.name ?? item.priceListItemId}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-
-          <form action={addStandingOrderForThis} className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
-            <div className="text-sm font-medium">Add a standing order</div>
-            <label className="flex flex-col gap-1 text-sm">
-              Slot
-              <select name="slotId" required className="rounded-md border border-gray-300 px-3 py-2">
-                {slots.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              Cadence
-              <select name="cadence" required className="rounded-md border border-gray-300 px-3 py-2">
-                <option value="per_day">Per-day</option>
-                <option value="batch">Batch (single drop covering a period)</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              Period days (for batch)
-              <input name="periodDays" type="number" defaultValue={7} min={1} className="rounded-md border border-gray-300 px-3 py-2" />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              Delivery method
-              <select name="deliveryMethod" required className="rounded-md border border-gray-300 px-3 py-2">
-                <option value="delivery">Delivery</option>
-                <option value="pickup">Pickup</option>
-              </select>
-            </label>
-            <fieldset className="flex flex-wrap gap-3 text-sm">
-              <legend className="mb-1 w-full text-gray-500">Days (or the single batch drop day)</legend>
-              {DAY_LABELS.map((label, d) => (
-                <label key={d} className="flex items-center gap-1">
-                  <input type="checkbox" name={`day-${d}`} /> {label}
-                </label>
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-ink-muted">Interaction history</h2>
+            <ul className="flex flex-col gap-2 text-sm">
+              {history.map((a) => (
+                <li key={a.id} className="rounded-card border border-line bg-surface p-3">
+                  <span className="font-medium text-ink">{a.effectiveDate}</span>{" "}
+                  <span className="text-ink-muted">
+                    —{" "}
+                    {a.priceListItemId
+                      ? `${priceById.get(a.priceListItemId)?.name ?? a.priceListItemId}: ${
+                          a.kind === "set_quantity" && a.quantity === 0 ? "skip" : `${a.kind} ${a.quantity ?? ""}`.trim()
+                        }`
+                      : a.kind}
+                    {a.note ? ` — ${a.note}` : ""}
+                  </span>
+                  {a.canceledAt ? <span className="ml-2 text-xs text-ink-subtle">(superseded)</span> : null}
+                </li>
               ))}
-            </fieldset>
-            <fieldset className="flex flex-col gap-2 text-sm">
-              <legend className="mb-1 text-gray-500">Quantities</legend>
-              {priceList.map((item) => (
-                <label key={item.id} className="flex items-center justify-between gap-2">
-                  {item.name}
-                  <input name={`qty-${item.id}`} type="number" min={0} defaultValue={0} className="w-20 rounded-md border border-gray-300 px-2 py-1" />
-                </label>
-              ))}
-            </fieldset>
-            <button type="submit" className="mt-2 self-start rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white">
-              Add standing order
-            </button>
-          </form>
+              {history.length === 0 && <p className="text-ink-muted">No adjustments yet.</p>}
+            </ul>
+          </section>
         </div>
-      </section>
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-gray-500">Add adjustment</h2>
-        <p className="mb-2 text-xs text-gray-500">
-          Set a meal type to 0 to skip it, or a number to override its quantity, for a date or a date range. This is a
-          quick operator override — the WhatsApp bot will be the primary way customers request these in milestone 3.
-        </p>
-        <form action={addAdjustmentForThis} className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
-          <div className="flex flex-wrap gap-2">
-            <label className="flex flex-col gap-1 text-sm">
-              Standing order
-              <select name="standingOrderId" defaultValue="" className="rounded-md border border-gray-300 px-3 py-2">
-                <option value="">(any order)</option>
-                {orders.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {slotById.get(o.slotId)?.label ?? o.slotId}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              Date
-              <input name="startDate" type="date" required className="rounded-md border border-gray-300 px-3 py-2" />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              Through (optional, for a range)
-              <input name="endDate" type="date" className="rounded-md border border-gray-300 px-3 py-2" />
-            </label>
-          </div>
-          <fieldset className="flex flex-col gap-2 text-sm">
-            <legend className="mb-1 text-gray-500">Meal types (blank = no change, 0 = skip)</legend>
-            {priceList.map((item) => (
-              <label key={item.id} className="flex items-center justify-between gap-2">
-                {item.name}
-                <input name={`qty-${item.id}`} type="number" min={0} placeholder="—" className="w-20 rounded-md border border-gray-300 px-2 py-1" />
-              </label>
-            ))}
-          </fieldset>
-          <button type="submit" className="self-start rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white">
-            Add adjustment
-          </button>
-        </form>
-      </section>
+        <div className="flex flex-col gap-6">
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-ink-muted">Standing orders</h2>
+            <div className="flex flex-col gap-3">
+              {orders.map((order) => (
+                <Card key={order.id}>
+                  <div className="flex items-center gap-2 font-medium text-ink">
+                    {slotById.get(order.slotId)?.label ?? order.slotId} — {order.deliveryMethod}
+                    {!order.active && <Badge>inactive</Badge>}
+                  </div>
+                  <div className="mt-1 text-sm text-ink-muted">
+                    {order.cadence === "batch"
+                      ? `Batch drop, ${DAY_LABELS[order.dayPattern[0] ?? 0]}, covers ${order.periodDays ?? "?"} days`
+                      : order.dayPattern.map((d) => DAY_LABELS[d]).join(", ")}
+                  </div>
+                  <ul className="mt-2 list-inside list-disc text-sm text-ink-muted">
+                    {order.items.map((item) => (
+                      <li key={item.id}>
+                        {item.quantity}x {priceById.get(item.priceListItemId)?.name ?? item.priceListItemId}
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              ))}
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-gray-500">Interaction history</h2>
-        <ul className="flex flex-col gap-1 text-sm">
-          {history.map((a) => (
-            <li key={a.id} className="rounded-lg border border-gray-200 bg-white p-3">
-              <span className="font-medium">{a.effectiveDate}</span> —{" "}
-              {a.priceListItemId
-                ? `${priceById.get(a.priceListItemId)?.name ?? a.priceListItemId}: ${
-                    a.kind === "set_quantity" && a.quantity === 0 ? "skip" : `${a.kind} ${a.quantity ?? ""}`.trim()
-                  }`
-                : a.kind}
-              {a.note ? ` — ${a.note}` : ""}
-              {a.canceledAt ? <span className="ml-2 text-xs text-gray-400">(superseded)</span> : null}
-            </li>
-          ))}
-          {history.length === 0 && <p className="text-gray-500">No adjustments yet.</p>}
-        </ul>
-      </section>
+              <Card key={orders.length}>
+                <form action={addStandingOrderForThis} className="flex flex-col gap-4">
+                  <div className="text-sm font-semibold text-ink">Add a standing order</div>
+                  <Select label="Slot" name="slotId" required defaultValue="">
+                    {slots.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </Select>
+                  <CadenceFields />
+                  <Select label="Delivery method" name="deliveryMethod" required defaultValue="delivery">
+                    <option value="delivery">Delivery</option>
+                    <option value="pickup">Pickup</option>
+                  </Select>
+                  <fieldset className="flex flex-col gap-2 text-sm">
+                    <legend className="mb-1 font-medium text-ink">Days (or the single batch drop day)</legend>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      {DAY_LABELS.map((label, d) => (
+                        <Checkbox key={d} label={label} name={`day-${d}`} />
+                      ))}
+                    </div>
+                  </fieldset>
+                  <fieldset className="flex flex-col gap-2 text-sm">
+                    <legend className="mb-1 font-medium text-ink">Quantities</legend>
+                    {priceList.map((item) => (
+                      <label key={item.id} className="flex items-center justify-between gap-2">
+                        {item.name}
+                        <input
+                          name={`qty-${item.id}`}
+                          type="number"
+                          min={0}
+                          defaultValue={0}
+                          className="w-20 min-h-[44px] rounded-control border border-line px-2 py-1 text-ink focus:outline-none focus:ring-2 focus:ring-accent-500"
+                        />
+                      </label>
+                    ))}
+                  </fieldset>
+                  <SubmitButton className="self-start">Add standing order</SubmitButton>
+                </form>
+              </Card>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="mb-2 text-sm font-semibold text-ink-muted">Add adjustment</h2>
+            <p className="mb-2 text-xs text-ink-muted">
+              Set a meal type to 0 to skip it, or a number to override its quantity, for a date or a date range. This is a
+              quick operator override — the WhatsApp bot will be the primary way customers request these in milestone 3.
+            </p>
+            <Card key={history.length}>
+              <form action={addAdjustmentForThis} className="flex flex-col gap-4">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <Select label="Standing order" name="standingOrderId" defaultValue="">
+                    <option value="">(any order)</option>
+                    {orders.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {slotById.get(o.slotId)?.label ?? o.slotId}
+                      </option>
+                    ))}
+                  </Select>
+                  <Input label="Date" name="startDate" type="date" required />
+                  <Input label="Through (optional, for a range)" name="endDate" type="date" />
+                </div>
+                <fieldset className="flex flex-col gap-2 text-sm">
+                  <legend className="mb-1 font-medium text-ink">Meal types (blank = no change, 0 = skip)</legend>
+                  {priceList.map((item) => (
+                    <label key={item.id} className="flex items-center justify-between gap-2">
+                      {item.name}
+                      <input
+                        name={`qty-${item.id}`}
+                        type="number"
+                        min={0}
+                        placeholder="—"
+                        className="w-20 min-h-[44px] rounded-control border border-line px-2 py-1 text-ink placeholder:text-ink-subtle focus:outline-none focus:ring-2 focus:ring-accent-500"
+                      />
+                    </label>
+                  ))}
+                </fieldset>
+                <SubmitButton className="self-start">Add adjustment</SubmitButton>
+              </form>
+            </Card>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }
