@@ -196,7 +196,7 @@ function StopList({
                   <SubmitButton className="w-full">Delivered</SubmitButton>
                 </form>
                 <details className="open:col-span-2 [&_summary::-webkit-details-marker]:hidden">
-                  <summary className="flex min-h-[44px] w-full cursor-pointer items-center justify-center rounded-control border border-line px-4 text-sm font-semibold text-ink">
+                  <summary className="flex min-h-[44px] w-full cursor-pointer items-center justify-center rounded-control border border-line-strong px-4 text-sm font-semibold text-ink">
                     Not delivered
                   </summary>
                   <form action={markNotDeliveredAction.bind(null, stop.id, date)} className="col-span-2 mt-2 flex flex-col gap-3">

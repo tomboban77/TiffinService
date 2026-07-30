@@ -11,7 +11,7 @@ export function Checkbox({ label, id, className = "", ...props }: CheckboxProps)
       <input
         id={inputId}
         type="checkbox"
-        className={`h-5 w-5 shrink-0 rounded border-line text-accent-600 focus:ring-2 focus:ring-accent-500 ${className}`}
+        className={`h-5 w-5 shrink-0 rounded border-line-strong text-accent-600 focus:ring-2 focus:ring-accent-500 ${className}`}
         {...props}
       />
       {label}

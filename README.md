@@ -116,6 +116,26 @@ Next's fetch patching (confirmed: identical calls succeed outside Next; this is 
 issue). Vercel's Node runtime may or may not exhibit the same failure — confirm login actually works
 there before shipping, and if it does fail, this fetch override is the first thing to check.
 
+## UX debt
+
+Deliberately deferred during the UI/UX elevation pass (design tokens + `components/ui`, all screens
+rebuilt on them) — tracked here so they don't get lost, not silently dropped:
+
+- **Success toasts/banners.** Every save shows a pending spinner (`SubmitButton`) and the page visibly
+  reflects the new data, but there's no explicit "Saved" confirmation. Doing this properly needs the
+  server actions (`**/actions.ts`) to redirect with a `?success=` param the way errors already do —
+  out of scope for a visual-only pass. Pick this up when milestone 3/4 work is touching those actions
+  anyway.
+- **Native `window.confirm()` on destructive actions** (Today's "Close this day", Settings'
+  "Deactivate"). Functional, but it's the browser's own dialog, not styled to match the app. Swap for a
+  proper confirm component in a pre-pilot polish pass.
+- **Customers list-detail isn't a live split view.** Desktop still navigates to a separate
+  `/customers/[id]` page rather than showing list + detail side by side in one view. True split view
+  needs Next.js parallel/intercepting routes — a routing change, which this pass's constraints ruled out.
+- **No optimistic UI anywhere.** Every action waits for the full server round-trip (with a spinner)
+  before the UI updates. Real optimistic updates (`useOptimistic`) need client-managed state layered on
+  top of what's currently pure server-component rendering — a bigger lift than a styling pass.
+
 ## Project layout
 
 ```

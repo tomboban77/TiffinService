@@ -153,7 +153,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
                           type="number"
                           min={0}
                           defaultValue={0}
-                          className="w-20 min-h-[44px] rounded-control border border-line px-2 py-1 text-ink focus:outline-none focus:ring-2 focus:ring-accent-500"
+                          className="w-20 min-h-[44px] rounded-control border border-line-strong px-2 py-1 text-ink focus:outline-none focus:ring-2 focus:ring-accent-500"
                         />
                       </label>
                     ))}
@@ -194,7 +194,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
                         type="number"
                         min={0}
                         placeholder="—"
-                        className="w-20 min-h-[44px] rounded-control border border-line px-2 py-1 text-ink placeholder:text-ink-subtle focus:outline-none focus:ring-2 focus:ring-accent-500"
+                        className="w-20 min-h-[44px] rounded-control border border-line-strong px-2 py-1 text-ink placeholder:text-ink-subtle focus:outline-none focus:ring-2 focus:ring-accent-500"
                       />
                     </label>
                   ))}

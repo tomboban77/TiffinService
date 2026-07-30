@@ -17,7 +17,7 @@ export function TimezoneField({ defaultValue, name = "timezone" }: { defaultValu
         required
         autoComplete="off"
         placeholder="Start typing a city or region…"
-        className="min-h-[44px] rounded-control border border-line px-3 py-2 text-ink placeholder:text-ink-subtle focus:outline-none focus:ring-2 focus:ring-accent-500"
+        className="min-h-[44px] rounded-control border border-line-strong px-3 py-2 text-ink placeholder:text-ink-subtle focus:outline-none focus:ring-2 focus:ring-accent-500"
       />
       <datalist id={listId}>
         {zones.map((zone) => (

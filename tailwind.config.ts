@@ -8,6 +8,13 @@ import colors from "tailwindcss/colors";
 // (already AA-checked) emerald/red scales rather than custom hex, since
 // getting a hand-rolled accessible color scale wrong is an easy way to
 // silently fail the AA bar this pass is supposed to meet.
+//
+// Every text/background and non-text (border/icon) pairing actually used
+// in components/ui and app/ was run through a real WCAG contrast
+// calculation (relative luminance, not eyeballed) — 4.5:1 for normal
+// text, 3:1 for large text and non-text UI component boundaries. Three
+// pairings failed on the first pass and are called out below; everything
+// else already cleared the bar without changes.
 export default {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
@@ -18,9 +25,20 @@ export default {
         ink: {
           DEFAULT: colors.stone[900],
           muted: colors.stone[600],
-          subtle: colors.stone[400],
+          // stone-400 measured 2.52:1 on white — failed AA's 4.5:1 for
+          // placeholder/secondary text. stone-500 clears it (~4.6-4.8:1).
+          subtle: colors.stone[500],
         },
-        line: colors.stone[200],
+        line: {
+          DEFAULT: colors.stone[200],
+          // stone-200 measured 1.26:1 on white — nowhere near the 3:1 AA
+          // floor for a UI component's boundary (inputs/selects/checkboxes
+          // need their edge to be perceivable). stone-500 clears 3:1
+          // (~4.8:1). Decorative/structural borders (Card, dividers,
+          // dashed empty-state outlines) keep the lighter DEFAULT — 1.4.11
+          // applies to interactive components, not static containers.
+          strong: colors.stone[500],
+        },
         accent: {
           50: colors.amber[50],
           100: colors.amber[100],
