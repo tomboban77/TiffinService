@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { UserPlus, Users } from "lucide-react";
 import { db } from "../../../db/client";
 import { requireOperator } from "../../../lib/auth";
 import { listCustomers } from "../../../lib/repo/customers";
+import { Badge, EmptyState, Input, LinkButton, PageHeader } from "../../../components/ui";
 
 export default async function CustomersPage({ searchParams }: { searchParams: { q?: string } }) {
   const operator = await requireOperator();
@@ -10,39 +12,54 @@ export default async function CustomersPage({ searchParams }: { searchParams: { 
   const filtered = q ? all.filter((c) => c.name.toLowerCase().includes(q) || c.phoneE164.includes(q)) : all;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Customers</h1>
-        <Link href="/customers/new" className="rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white">
-          Add
-        </Link>
-      </div>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+      <PageHeader
+        title="Customers"
+        action={
+          <LinkButton href="/customers/new" size="sm">
+            <UserPlus className="h-4 w-4" aria-hidden="true" />
+            Add
+          </LinkButton>
+        }
+      />
 
-      <form className="flex">
-        <input
-          name="q"
-          defaultValue={searchParams.q ?? ""}
-          placeholder="Search name or phone"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+      {all.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No customers yet"
+          description="Add your first customer to start building standing orders, cook counts, and routes."
+          action={
+            <LinkButton href="/customers/new">
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              Add a customer
+            </LinkButton>
+          }
         />
-      </form>
+      ) : (
+        <>
+          <form>
+            <Input label="Search" name="q" defaultValue={searchParams.q ?? ""} placeholder="Search name or phone" />
+          </form>
 
-      <ul className="flex flex-col gap-2">
-        {filtered.map((c) => (
-          <li key={c.id}>
-            <Link href={`/customers/${c.id}`} className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3">
-              <div>
-                <div className="text-sm font-medium">{c.name}</div>
-                <div className="text-xs text-gray-500">{c.phoneE164}</div>
-              </div>
-              <span className="rounded-full bg-gray-100 px-2 py-1 text-xs">
-                {c.billingMode === "prepaid" ? `${c.pointsBalance} pts` : "Tab"}
-              </span>
-            </Link>
-          </li>
-        ))}
-        {filtered.length === 0 && <p className="text-sm text-gray-500">No customers yet.</p>}
-      </ul>
+          <ul className="flex flex-col gap-2">
+            {filtered.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/customers/${c.id}`}
+                  className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-4 shadow-soft transition-colors hover:border-accent-300"
+                >
+                  <div>
+                    <div className="font-medium text-ink">{c.name}</div>
+                    <div className="text-sm text-ink-muted">{c.phoneE164}</div>
+                  </div>
+                  <Badge>{c.billingMode === "prepaid" ? `${c.pointsBalance} pts` : "Tab"}</Badge>
+                </Link>
+              </li>
+            ))}
+            {filtered.length === 0 && <p className="text-sm text-ink-muted">No matches for &ldquo;{searchParams.q}&rdquo;.</p>}
+          </ul>
+        </>
+      )}
     </div>
   );
 }

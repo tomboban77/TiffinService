@@ -3,9 +3,10 @@ import type { SelectHTMLAttributes } from "react";
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   error?: string;
+  hint?: string;
 }
 
-export function Select({ label, error, id, className = "", children, ...props }: SelectProps) {
+export function Select({ label, error, hint, id, className = "", children, ...props }: SelectProps) {
   const selectId = id ?? props.name;
   return (
     <label htmlFor={selectId} className="flex flex-col gap-1.5 text-sm">
@@ -20,6 +21,7 @@ export function Select({ label, error, id, className = "", children, ...props }:
       >
         {children}
       </select>
+      {hint && !error && <span className="text-xs text-ink-muted">{hint}</span>}
       {error && <span className="text-xs font-medium text-danger-600">{error}</span>}
     </label>
   );
