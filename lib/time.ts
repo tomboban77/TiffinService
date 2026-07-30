@@ -21,3 +21,9 @@ export function addDays(dateIso: string, days: number): string {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
+
+/** Display-only, e.g. "Tue, Jul 28" — never used for storage/comparison. */
+export function formatDateLabel(dateIso: string, timezone: string): string {
+  const anchored = new Date(`${dateIso}T12:00:00Z`);
+  return new Intl.DateTimeFormat("en-US", { timeZone: timezone, weekday: "short", month: "short", day: "numeric" }).format(anchored);
+}

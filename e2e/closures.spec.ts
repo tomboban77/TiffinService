@@ -33,6 +33,9 @@ test("a closure zeros the day's counts and route without writing any per-custome
   await expect(authedPage.getByText("Ahmed")).toBeVisible();
 
   await authedPage.getByPlaceholder("Reason (optional)").fill("Owner's day off");
+  // Closing a day is a destructive action with a native confirm() gate —
+  // Playwright auto-dismisses dialogs unless told otherwise, so accept it.
+  authedPage.once("dialog", (dialog) => dialog.accept());
   await authedPage.getByRole("button", { name: "Close this day" }).click();
 
   await expect(authedPage.getByText(/no counts, no route, nothing burns today/i)).toBeVisible();

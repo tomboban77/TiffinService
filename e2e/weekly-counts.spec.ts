@@ -24,8 +24,9 @@ async function expectProteinCount(page: Page, date: string, expected: number | n
     await expect(page.getByText("Nothing scheduled.").first()).toBeVisible();
     return;
   }
-  const tile = page.locator("div.rounded-lg.bg-gray-50.p-3", { hasText: "Protein" });
-  await expect(tile.locator("div.text-3xl")).toHaveText(String(expected));
+  // StatTile exposes role="group" + an aria-label combining value and label
+  // — a stable selector that doesn't couple to Tailwind class names.
+  await expect(page.getByRole("group", { name: `${expected} Protein` })).toBeVisible();
 }
 
 test("combined per-meal-type counts across a week, including empty weekends", async ({ authedPage, operatorFixture }) => {

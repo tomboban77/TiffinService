@@ -56,7 +56,7 @@ test.describe("the compact Add adjustment form", () => {
     await authedPage.goto(`/today?date=${DATE}`);
     await expect(authedPage.getByText("Priya")).toHaveCount(0);
     await expect(authedPage.getByText("Nothing scheduled.").first()).toBeVisible();
-    await expect(authedPage.getByText("Nothing here today.").first()).toBeVisible();
+    await expect(authedPage.getByText("No deliveries on the route today.")).toBeVisible();
 
     // Restored the next day — the skip was for DATE only.
     await authedPage.goto(`/today?date=${NEXT_DATE}`);

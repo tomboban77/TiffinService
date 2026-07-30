@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight, MapPin, PackageCheck, Users } from "lucide-react";
 import { db } from "../../../db/client";
 import { requireOperator } from "../../../lib/auth";
 import { listSlots } from "../../../lib/repo/slots";
@@ -6,20 +7,23 @@ import { listPriceListItems } from "../../../lib/repo/priceList";
 import { listActiveStandingOrderFixtures } from "../../../lib/repo/standingOrders";
 import { listAdjustmentsForDate } from "../../../lib/repo/adjustments";
 import { listClosureDates } from "../../../lib/repo/closures";
+import { listCustomers } from "../../../lib/repo/customers";
 import { ensureRouteStopsForDate, listRouteStopsForDate } from "../../../lib/repo/routeStops";
 import { computeDailyCounts } from "../../../lib/billing/counts";
-import { todayInTimezone, addDays, weekdayInTimezone } from "../../../lib/time";
+import { todayInTimezone, addDays, weekdayInTimezone, formatDateLabel } from "../../../lib/time";
 import { markDeliveredAction, markNotDeliveredAction, closeDayAction } from "./actions";
+import { Badge, type BadgeVariant, Banner, Card, Checkbox, ConfirmSubmitButton, EmptyState, Input, LinkButton, StatTile, SubmitButton } from "../../../components/ui";
 
 export default async function TodayPage({ searchParams }: { searchParams: { date?: string; error?: string } }) {
   const operator = await requireOperator();
   const date = searchParams.date ?? todayInTimezone(operator.timezone);
   const weekday = weekdayInTimezone(date, operator.timezone);
 
-  const [slots, priceList, closureDates] = await Promise.all([
+  const [slots, priceList, closureDates, customers] = await Promise.all([
     listSlots(db, operator.id),
     listPriceListItems(db, operator.id),
     listClosureDates(db, operator.id),
+    listCustomers(db, operator.id),
   ]);
   const isClosed = closureDates.includes(date);
   const priceById = new Map(priceList.map((p) => [p.id, p]));
@@ -35,95 +39,131 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
   ]);
 
   const closeDayForThis = closeDayAction.bind(null, date);
+  const deliveryStops = stops.filter((s) => s.deliveryMethod === "delivery");
+  const pickupStops = stops.filter((s) => s.deliveryMethod === "pickup");
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <Link href={`/today?date=${addDays(date, -1)}`} className="text-sm text-gray-500">
-          ← Prev
+        <Link
+          href={`/today?date=${addDays(date, -1)}`}
+          aria-label="Previous day"
+          className="flex h-11 w-11 items-center justify-center rounded-control text-ink-muted hover:bg-stone-100 hover:text-ink"
+        >
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
         </Link>
-        <h1 className="text-lg font-semibold">{date}</h1>
-        <Link href={`/today?date=${addDays(date, 1)}`} className="text-sm text-gray-500">
-          Next →
+        <h1 className="text-lg font-bold text-ink">{formatDateLabel(date, operator.timezone)}</h1>
+        <Link
+          href={`/today?date=${addDays(date, 1)}`}
+          aria-label="Next day"
+          className="flex h-11 w-11 items-center justify-center rounded-control text-ink-muted hover:bg-stone-100 hover:text-ink"
+        >
+          <ChevronRight className="h-5 w-5" aria-hidden="true" />
         </Link>
       </div>
 
-      {searchParams.error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{searchParams.error}</div>
-      )}
+      {searchParams.error && <Banner variant="error">{searchParams.error}</Banner>}
 
-      {isClosed ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          Closed — no counts, no route, nothing burns today.
-        </div>
+      {customers.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No customers yet"
+          description="Add your first customer and their standing order to start seeing cook counts and today's route here."
+          action={<LinkButton href="/customers/new">Add a customer</LinkButton>}
+        />
+      ) : isClosed ? (
+        <Banner variant="info">Closed — no counts, no route, nothing burns today.</Banner>
       ) : (
-        <>
-          <section className="flex flex-col gap-4">
-            <h2 className="text-sm font-semibold text-gray-500">Cook counts</h2>
-            {slots
-              .filter((s) => s.active)
-              .map((slot) => {
-                const counts = computeDailyCounts({
-                  date,
-                  slotId: slot.id,
-                  standingOrders: orders,
-                  adjustments,
-                  closureDates,
-                  weekday,
-                });
-                const entries = Object.entries(counts);
-                return (
-                  <div key={slot.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <div className="mb-3 text-base font-semibold">{slot.label}</div>
-                    {entries.length === 0 ? (
-                      <p className="text-sm text-gray-500">Nothing scheduled.</p>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-3">
-                        {entries.map(([itemId, qty]) => (
-                          <div key={itemId} className="rounded-lg bg-gray-50 p-3">
-                            <div className="text-3xl font-bold leading-none">{qty}</div>
-                            <div className="mt-1 text-sm text-gray-500">{priceById.get(itemId)?.name ?? itemId}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+          <div className="flex flex-col gap-6">
+            <section className="flex flex-col gap-4">
+              <h2 className="text-sm font-semibold text-ink-muted">Cook counts</h2>
+              {slots
+                .filter((s) => s.active)
+                .map((slot) => {
+                  const counts = computeDailyCounts({
+                    date,
+                    slotId: slot.id,
+                    standingOrders: orders,
+                    adjustments,
+                    closureDates,
+                    weekday,
+                  });
+                  const entries = Object.entries(counts);
+                  return (
+                    <Card key={slot.id}>
+                      <div className="mb-3 text-base font-semibold text-ink">{slot.label}</div>
+                      {entries.length === 0 ? (
+                        <p className="text-sm text-ink-muted">Nothing scheduled.</p>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-3">
+                          {entries.map(([itemId, qty]) => (
+                            <StatTile key={itemId} value={qty} label={priceById.get(itemId)?.name ?? itemId} />
+                          ))}
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+            </section>
+
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-ink-muted">Closure</h2>
+              <Card>
+                <form action={closeDayForThis} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <Input label="Reason (optional)" name="reason" placeholder="Reason (optional)" />
                   </div>
-                );
-              })}
-          </section>
+                  <ConfirmSubmitButton
+                    variant="secondary"
+                    confirmMessage={`Close ${formatDateLabel(date, operator.timezone)}? No counts and no route will be generated for this day.`}
+                  >
+                    Close this day
+                  </ConfirmSubmitButton>
+                </form>
+              </Card>
+            </section>
+          </div>
 
-          <section>
-            <h2 className="mb-2 text-sm font-semibold text-gray-500">Delivery route</h2>
-            <StopList
-              stops={stops.filter((s) => s.deliveryMethod === "delivery")}
-              slotLabel={(slotId) => slots.find((s) => s.id === slotId)?.label ?? slotId}
-              date={date}
-            />
-          </section>
+          <div className="flex flex-col gap-6">
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-ink-muted">Delivery route</h2>
+              {deliveryStops.length === 0 ? (
+                <EmptyStopState icon={MapPin} text="No deliveries on the route today." />
+              ) : (
+                <StopList stops={deliveryStops} slotLabel={(slotId) => slots.find((s) => s.id === slotId)?.label ?? slotId} date={date} />
+              )}
+            </section>
 
-          <section>
-            <h2 className="mb-2 text-sm font-semibold text-gray-500">Pickup list</h2>
-            <StopList
-              stops={stops.filter((s) => s.deliveryMethod === "pickup")}
-              slotLabel={(slotId) => slots.find((s) => s.id === slotId)?.label ?? slotId}
-              date={date}
-            />
-          </section>
-
-          <section>
-            <h2 className="mb-2 text-sm font-semibold text-gray-500">Closure</h2>
-            <form action={closeDayForThis} className="flex gap-2 rounded-lg border border-gray-200 bg-white p-4">
-              <input name="reason" placeholder="Reason (optional)" className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm" />
-              <button type="submit" className="rounded-md border border-gray-300 px-3 py-1 text-sm">
-                Close this day
-              </button>
-            </form>
-          </section>
-        </>
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-ink-muted">Pickup list</h2>
+              {pickupStops.length === 0 ? (
+                <EmptyStopState icon={PackageCheck} text="No pickups today." />
+              ) : (
+                <StopList stops={pickupStops} slotLabel={(slotId) => slots.find((s) => s.id === slotId)?.label ?? slotId} date={date} />
+              )}
+            </section>
+          </div>
+        </div>
       )}
     </div>
   );
 }
+
+function EmptyStopState({ icon: Icon, text }: { icon: typeof MapPin; text: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-card border border-dashed border-line bg-surface px-4 py-6 text-sm text-ink-muted">
+      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+      {text}
+    </div>
+  );
+}
+
+const STATUS_BADGE_VARIANT: Record<string, BadgeVariant> = {
+  pending: "pending",
+  delivered: "delivered",
+  not_delivered: "failed",
+};
 
 function StopList({
   stops,
@@ -134,57 +174,43 @@ function StopList({
   slotLabel: (slotId: string) => string;
   date: string;
 }) {
-  if (stops.length === 0) return <p className="text-sm text-gray-500">Nothing here today.</p>;
-
   return (
     <ul className="flex flex-col gap-3">
       {stops.map((stop) => (
-        <li key={stop.id} className="rounded-xl border border-gray-200 bg-white p-4 text-sm shadow-sm">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="text-base font-medium">{stop.customerName}</div>
-              <div className="text-sm text-gray-500">
-                {slotLabel(stop.slotId)} {stop.customerAddress ? `— ${stop.customerAddress}` : ""}
+        <li key={stop.id}>
+          <Card>
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-base font-medium text-ink">{stop.customerName}</div>
+                <div className="text-sm text-ink-muted">
+                  {slotLabel(stop.slotId)} {stop.customerAddress ? `— ${stop.customerAddress}` : ""}
+                </div>
+                {stop.customerFoodNotes && <div className="text-sm text-ink-muted">Notes: {stop.customerFoodNotes}</div>}
               </div>
-              {stop.customerFoodNotes && <div className="text-sm text-gray-500">Notes: {stop.customerFoodNotes}</div>}
+              <Badge variant={STATUS_BADGE_VARIANT[stop.status] ?? "neutral"}>{stop.status}</Badge>
             </div>
-            <StatusBadge status={stop.status} />
-          </div>
 
-          {stop.status === "pending" && (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <form action={markDeliveredAction.bind(null, stop.id, date)}>
-                <button className="w-full rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white">Delivered</button>
-              </form>
-              <details className="open:col-span-2 [&_summary::-webkit-details-marker]:hidden">
-                <summary className="flex w-full cursor-pointer items-center justify-center rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700">
-                  Not delivered
-                </summary>
-                <form action={markNotDeliveredAction.bind(null, stop.id, date)} className="mt-2 flex flex-col gap-2">
-                  <label className="flex items-center gap-2 py-1">
-                    <input type="checkbox" name="chargeOnFail" className="h-5 w-5" /> Charge anyway
-                  </label>
-                  <input
-                    name="note"
-                    placeholder="Note (required)"
-                    required
-                    className="rounded-lg border border-gray-300 px-3 py-3 text-sm"
-                  />
-                  <button type="submit" className="rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold">
-                    Confirm
-                  </button>
+            {stop.status === "pending" && (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <form action={markDeliveredAction.bind(null, stop.id, date)}>
+                  <SubmitButton className="w-full">Delivered</SubmitButton>
                 </form>
-              </details>
-            </div>
-          )}
-          {stop.status === "not_delivered" && stop.note && <div className="mt-2 text-sm text-gray-500">Note: {stop.note}</div>}
+                <details className="open:col-span-2 [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex min-h-[44px] w-full cursor-pointer items-center justify-center rounded-control border border-line px-4 text-sm font-semibold text-ink">
+                    Not delivered
+                  </summary>
+                  <form action={markNotDeliveredAction.bind(null, stop.id, date)} className="col-span-2 mt-2 flex flex-col gap-3">
+                    <Checkbox label="Charge anyway" name="chargeOnFail" />
+                    <Input label="Note" name="note" placeholder="Note (required)" required />
+                    <SubmitButton variant="secondary">Confirm</SubmitButton>
+                  </form>
+                </details>
+              </div>
+            )}
+            {stop.status === "not_delivered" && stop.note && <div className="mt-2 text-sm text-ink-muted">Note: {stop.note}</div>}
+          </Card>
         </li>
       ))}
     </ul>
   );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const color = status === "delivered" ? "bg-green-100 text-green-700" : status === "not_delivered" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600";
-  return <span className={`rounded-full px-2 py-1 text-xs ${color}`}>{status}</span>;
 }
