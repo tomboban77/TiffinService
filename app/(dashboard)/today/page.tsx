@@ -44,19 +44,19 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between rounded-control border border-line bg-surface px-2 py-1.5 shadow-soft">
         <Link
           href={`/today?date=${addDays(date, -1)}`}
           aria-label="Previous day"
-          className="flex h-11 w-11 items-center justify-center rounded-control text-ink-muted hover:bg-stone-100 hover:text-ink"
+          className="flex h-11 w-11 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-paper hover:text-ink"
         >
           <ChevronLeft className="h-5 w-5" aria-hidden="true" />
         </Link>
-        <h1 className="text-lg font-bold text-ink">{formatDateLabel(date, operator.timezone)}</h1>
+        <h1 className="font-serif text-lg font-semibold text-ink sm:text-xl">{formatDateLabel(date, operator.timezone)}</h1>
         <Link
           href={`/today?date=${addDays(date, 1)}`}
           aria-label="Next day"
-          className="flex h-11 w-11 items-center justify-center rounded-control text-ink-muted hover:bg-stone-100 hover:text-ink"
+          className="flex h-11 w-11 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-paper hover:text-ink"
         >
           <ChevronRight className="h-5 w-5" aria-hidden="true" />
         </Link>
@@ -77,7 +77,7 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
         <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
           <div className="flex flex-col gap-6">
             <section className="flex flex-col gap-4">
-              <h2 className="text-sm font-semibold text-ink-muted">Cook counts</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-accent-700">Cook counts</h2>
               {slots
                 .filter((s) => s.active)
                 .map((slot) => {
@@ -92,7 +92,7 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
                   const entries = Object.entries(counts);
                   return (
                     <Card key={slot.id}>
-                      <div className="mb-3 text-base font-semibold text-ink">{slot.label}</div>
+                      <div className="mb-3 font-serif text-lg font-semibold text-ink">{slot.label}</div>
                       {entries.length === 0 ? (
                         <p className="text-sm text-ink-muted">Nothing scheduled.</p>
                       ) : (
@@ -108,7 +108,7 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
             </section>
 
             <section>
-              <h2 className="mb-2 text-sm font-semibold text-ink-muted">Closure</h2>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Closure</h2>
               <Card>
                 <form action={closeDayForThis} className="flex flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="flex-1">
@@ -127,7 +127,7 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
 
           <div className="flex flex-col gap-6">
             <section>
-              <h2 className="mb-2 text-sm font-semibold text-ink-muted">Delivery route</h2>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Delivery route</h2>
               {deliveryStops.length === 0 ? (
                 <EmptyStopState icon={MapPin} text="No deliveries on the route today." />
               ) : (
@@ -136,7 +136,7 @@ export default async function TodayPage({ searchParams }: { searchParams: { date
             </section>
 
             <section>
-              <h2 className="mb-2 text-sm font-semibold text-ink-muted">Pickup list</h2>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Pickup list</h2>
               {pickupStops.length === 0 ? (
                 <EmptyStopState icon={PackageCheck} text="No pickups today." />
               ) : (
@@ -181,7 +181,7 @@ function StopList({
           <Card>
             <div className="flex items-center justify-between gap-2">
               <div>
-                <div className="text-base font-medium text-ink">{stop.customerName}</div>
+                <div className="font-serif text-base font-semibold text-ink">{stop.customerName}</div>
                 <div className="text-sm text-ink-muted">
                   {slotLabel(stop.slotId)} {stop.customerAddress ? `— ${stop.customerAddress}` : ""}
                 </div>

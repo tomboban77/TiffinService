@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 export type BadgeVariant = "pending" | "delivered" | "failed" | "paused" | "neutral";
 
 const variants: Record<BadgeVariant, string> = {
-  pending: "bg-stone-100 text-stone-700",
+  pending: "bg-brass-50 text-ink-muted",
   delivered: "bg-success-100 text-success-700",
   failed: "bg-danger-100 text-danger-700",
   paused: "bg-accent-100 text-accent-700",
-  neutral: "bg-stone-100 text-stone-600",
+  neutral: "bg-brass-50 text-ink-muted",
 };
 
 export function Badge({ variant = "neutral", children }: { variant?: BadgeVariant; children: ReactNode }) {

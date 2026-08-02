@@ -1,7 +1,7 @@
 import { LogOut } from "lucide-react";
 import { requireOperator } from "../../lib/auth";
 import { signOut } from "../login/actions";
-import { SubmitButton } from "../../components/ui";
+import { KettleMark, SubmitButton } from "../../components/ui";
 import { DashboardNav } from "./DashboardNav";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -9,9 +9,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen pb-24 sm:pb-0">
-      <header className="border-b border-line bg-surface">
+      <header className="sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <span className="text-sm font-semibold text-ink">{operator.businessName}</span>
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
+              <KettleMark className="h-5 w-5" />
+            </span>
+            <div className="leading-tight">
+              <div className="font-serif text-base font-semibold text-ink">Kettle</div>
+              <div className="text-xs text-ink-subtle">{operator.businessName}</div>
+            </div>
+          </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <DashboardNav />
             <form action={signOut}>

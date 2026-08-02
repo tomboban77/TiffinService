@@ -7,10 +7,10 @@ const base =
   "disabled:pointer-events-none disabled:opacity-50";
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-ink text-white hover:bg-stone-800 active:bg-stone-900",
-  secondary: "border border-line bg-surface text-ink hover:bg-stone-50 active:bg-stone-100",
+  primary: "bg-ink text-white shadow-soft hover:bg-ink/90 active:bg-ink/80",
+  secondary: "border border-line-strong bg-surface text-ink shadow-soft hover:bg-paper active:bg-accent-50",
   destructive: "bg-danger-600 text-white hover:bg-danger-700 active:bg-red-800",
-  ghost: "text-ink-muted hover:bg-stone-100 hover:text-ink",
+  ghost: "text-ink-muted hover:bg-accent-50 hover:text-ink",
 };
 
 // Every size clears the 44px touch-target minimum — "sm" trims horizontal

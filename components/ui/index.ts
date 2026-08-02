@@ -12,3 +12,4 @@ export { EmptyState } from "./EmptyState";
 export { PageHeader } from "./PageHeader";
 export { Banner, type BannerVariant } from "./Banner";
 export { TimezoneField } from "./TimezoneField";
+export { KettleMark } from "./KettleMark";

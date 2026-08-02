@@ -30,7 +30,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { e
       {searchParams.error && <Banner variant="error">{searchParams.error}</Banner>}
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-ink-muted">Business basics</h2>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Business basics</h2>
         <Card>
           <form action={updateBusinessBasics} className="flex flex-col gap-4">
             <Input label="Business name" name="businessName" defaultValue={operator.businessName} />
@@ -43,7 +43,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { e
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-ink-muted">Billing day</h2>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Billing day</h2>
         <Card>
           <form action={updateBillingConfig} className="flex flex-col gap-4">
             <BillingFrequencyFields defaultFrequency={operator.billingFrequency ?? ""} defaultDayOfWeek={operator.billingDayOfWeek} />
@@ -54,7 +54,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { e
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-ink-muted">Slots</h2>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Slots</h2>
         <Card className="flex flex-col gap-3">
           {slots.map((slot) => (
             <div key={slot.id} className="flex items-center justify-between gap-2 text-sm">
@@ -92,7 +92,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { e
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-ink-muted">Price list</h2>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Price list</h2>
         <Card className="flex flex-col gap-3">
           {priceList.map((item) => (
             <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
@@ -130,7 +130,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: { e
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-ink-muted">Prepaid plans</h2>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Prepaid plans</h2>
         <Card className="flex flex-col gap-3">
           {prepaidPlans.map((plan) => (
             <div key={plan.id} className="text-sm text-ink">

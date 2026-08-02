@@ -43,7 +43,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <div className="flex flex-col gap-6">
           <section>
-            <h2 className="mb-2 text-sm font-semibold text-ink-muted">Contact</h2>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Contact</h2>
             <Card>
               <form action={updateCustomerDetailsForThis} className="flex flex-col gap-4">
                 <Input label="Name" name="name" defaultValue={customer.name} />
@@ -57,7 +57,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
 
           {customer.billingMode === "prepaid" && (
             <section>
-              <h2 className="mb-2 text-sm font-semibold text-ink-muted">Points balance</h2>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Points balance</h2>
               <Card>
                 <form key={customer.pointsBalance} action={adjustPointsForThis} className="flex flex-col gap-4 sm:flex-row sm:items-end">
                   <div className="w-28">
@@ -73,7 +73,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
           )}
 
           <section>
-            <h2 className="mb-2 text-sm font-semibold text-ink-muted">Interaction history</h2>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Interaction history</h2>
             <ul className="flex flex-col gap-2 text-sm">
               {history.map((a) => (
                 <li key={a.id} className="rounded-card border border-line bg-surface p-3">
@@ -97,11 +97,11 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
 
         <div className="flex flex-col gap-6">
           <section>
-            <h2 className="mb-2 text-sm font-semibold text-ink-muted">Standing orders</h2>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Standing orders</h2>
             <div className="flex flex-col gap-3">
               {orders.map((order) => (
                 <Card key={order.id}>
-                  <div className="flex items-center gap-2 font-medium text-ink">
+                  <div className="flex items-center gap-2 font-serif text-base font-semibold text-ink">
                     {slotById.get(order.slotId)?.label ?? order.slotId} — {order.deliveryMethod}
                     {!order.active && <Badge>inactive</Badge>}
                   </div>
@@ -165,7 +165,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
           </section>
 
           <section>
-            <h2 className="mb-2 text-sm font-semibold text-ink-muted">Add adjustment</h2>
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent-700">Add adjustment</h2>
             <p className="mb-2 text-xs text-ink-muted">
               Set a meal type to 0 to skip it, or a number to override its quantity, for a date or a date range. This is a
               quick operator override — the WhatsApp bot will be the primary way customers request these in milestone 3.

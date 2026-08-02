@@ -13,7 +13,7 @@ const styles: Record<BannerVariant, { wrap: string; icon: ReactNode }> = {
 export function Banner({ variant, children }: { variant: BannerVariant; children: ReactNode }) {
   const s = styles[variant];
   return (
-    <div role={variant === "error" ? "alert" : "status"} className={`flex items-start gap-2 rounded-control border p-3 text-sm font-medium ${s.wrap}`}>
+    <div role={variant === "error" ? "alert" : "status"} className={`flex items-start gap-2 rounded-control border p-3 text-sm font-medium shadow-soft ${s.wrap}`}>
       {s.icon}
       <div>{children}</div>
     </div>

@@ -46,10 +46,10 @@ export default async function CustomersPage({ searchParams }: { searchParams: { 
               <li key={c.id}>
                 <Link
                   href={`/customers/${c.id}`}
-                  className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-4 shadow-soft transition-colors hover:border-accent-300"
+                  className="flex items-center justify-between gap-3 rounded-card border border-line bg-surface p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-card"
                 >
                   <div>
-                    <div className="font-medium text-ink">{c.name}</div>
+                    <div className="font-serif text-base font-semibold text-ink">{c.name}</div>
                     <div className="text-sm text-ink-muted">{c.phoneE164}</div>
                   </div>
                   <Badge>{c.billingMode === "prepaid" ? `${c.pointsBalance} pts` : "Tab"}</Badge>

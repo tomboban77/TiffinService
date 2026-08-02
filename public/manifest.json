@@ -1,9 +1,9 @@
 {
-  "name": "Kitchen Dashboard",
-  "short_name": "Kitchen",
+  "name": "Kettle",
+  "short_name": "Kettle",
   "start_url": "/today",
   "display": "standalone",
-  "background_color": "#f9fafb",
-  "theme_color": "#111827",
+  "background_color": "#FAF5EC",
+  "theme_color": "#2A1F17",
   "icons": []
 }
